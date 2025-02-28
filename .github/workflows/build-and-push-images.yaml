@@ -46,7 +46,7 @@ jobs:
         id: publish
         uses: ./.github/workflows/template-publish-image
         with:
-          image: ghcr.io/kubeflow/${{ matrix.component-name }}
+          image: ghcr.io/kubeflow/trainer/${{ matrix.component-name }}
           dockerfile: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platforms }}
           context: ${{ matrix.context }}
@@ -56,7 +56,7 @@ jobs:
         if: steps.publish.outcome == 'skipped'
         uses: ./.github/workflows/template-publish-image
         with:
-          image: ghcr.io/kubeflow/${{ matrix.component-name }}
+          image: ghcr.io/kubeflow/trainer/${{ matrix.component-name }}
           dockerfile: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platforms }}
           context: ${{ matrix.context }}
