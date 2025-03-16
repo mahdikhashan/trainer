@@ -7,7 +7,8 @@ on:
 jobs:
   build-and-publish-to-ghcr:
     name: Build and Publish Images to Github Container Registry
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: ubuntu-latest-16-cores
 
     strategy:
       fail-fast: false
@@ -67,7 +68,8 @@ jobs:
 
   build-and-publish-to-dockerhub:
     name: Build and Publish Images to DockerHub
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: ubuntu-latest-16-cores
 
     strategy:
       fail-fast: false
@@ -81,6 +83,9 @@ jobs:
             platforms: linux/amd64,linux/arm64
           - component-name: dataset-initializer
             dockerfile: cmd/initializer/dataset/Dockerfile
+            platforms: linux/amd64,linux/arm64
+          - component-name: torchtune-trainer
+            dockerfile: cmd/trainers/torchtune/Dockerfile
             platforms: linux/amd64,linux/arm64
 
     steps:
