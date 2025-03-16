@@ -89,6 +89,9 @@ jobs:
             platforms: linux/amd64,linux/arm64
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Docker Hub Login
         if: >-
           github.repository == 'kubeflow/trainer' &&
