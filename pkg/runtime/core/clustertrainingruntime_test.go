@@ -26,9 +26,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
 	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	"github.com/kubeflow/trainer/pkg/constants"
 	testingutil "github.com/kubeflow/trainer/pkg/util/testing"
 )
 
@@ -47,8 +49,18 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 		"succeeded to build PodGroup and JobSet with NumNodes from the Runtime and container from the Trainer.": {
 			clusterTrainingRuntime: testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").RuntimeSpec(
 				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").Spec).
-					InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
-					NumNodes(100).
+					JobSetSpec(
+						testingutil.MakeJobSetWrapper("", "").
+							DependsOn(constants.JobInitializer, jobsetv1alpha2.DependencyComplete, constants.JobTrainerNode).
+							Obj().
+							Spec,
+					).
+					ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					WithMLPolicy(
+						testingutil.MakeMLPolicyWrapper().
+							WithNumNodes(100).
+							Obj(),
+					).
 					ContainerTrainer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
 					PodGroupPolicyCoschedulingSchedulingTimeout(120).
 					Obj(),
@@ -65,7 +77,11 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 				Obj(),
 			wantObjs: []runtime.Object{
 				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
-					InitContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					ContainerDatasetModelInitializer("test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					DependsOn(constants.JobInitializer, jobsetv1alpha2.DependencyComplete, constants.JobTrainerNode).
+					Replicas(1, constants.JobTrainerNode, constants.JobInitializer, constants.JobLauncher).
+					Parallelism(constants.JobInitializer, 1).
+					Completions(constants.JobInitializer, 1).
 					NumNodes(100).
 					ContainerTrainer("test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 					Suspend(true).
@@ -74,9 +90,9 @@ func TestClusterTrainingRuntimeNewObjects(t *testing.T) {
 					Obj(),
 				testingutil.MakeSchedulerPluginsPodGroup(metav1.NamespaceDefault, "test-job").
 					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
-					MinMember(101). // 101 replicas = 100 Trainer nodes + 1 Initializer.
+					MinMember(101). // 101 replicas = 100 Trainer nodes + 1 Initializers.
 					MinResources(corev1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("101"), // Every replica has 1 CPU = 101 CPUs in total.
+						corev1.ResourceCPU: resource.MustParse("102"), // Trainer node has 100 CPUs + 2 CPUs from 2 initializer containers.
 					}).
 					SchedulingTimeout(120).
 					Obj(),

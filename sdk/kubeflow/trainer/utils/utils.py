@@ -13,17 +13,16 @@
 # limitations under the License.
 
 import inspect
-import json
 import os
 import queue
 import textwrap
 import threading
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from kubeflow.trainer import models
+import kubeflow.trainer.models as models
 from kubeflow.trainer.constants import constants
 from kubeflow.trainer.types import types
-from kubernetes import client, config
+from kubernetes import config
 
 
 def is_running_in_k8s() -> bool:
@@ -41,19 +40,9 @@ def get_default_target_namespace() -> str:
         return f.readline()
 
 
-class FakeResponse:
-    """Fake object of RESTResponse to deserialize
-    Ref) https://github.com/kubeflow/katib/pull/1630#discussion_r697877815
-    Ref) https://github.com/kubernetes-client/python/issues/977#issuecomment-592030030
-    """
-
-    def __init__(self, obj):
-        self.data = json.dumps(obj)
-
-
 def get_container_devices(
-    resources: Optional[client.V1ResourceRequirements], num_procs: Optional[str] = None
-) -> Tuple[str, str]:
+    resources: Optional[models.IoK8sApiCoreV1ResourceRequirements],
+) -> Tuple[str, Union[str, float]]:
     """
     Get the device type and device count for the given container.
     """
@@ -71,51 +60,40 @@ def get_container_devices(
     # TODO (andreyvelich): Support other resource labels (e.g. NPUs).
     if constants.NVIDIA_GPU_LABEL in resources.limits:
         device = constants.GPU_DEVICE_TYPE
-        device_count = resources.limits[constants.NVIDIA_GPU_LABEL]
+        device_count = resources.limits[constants.NVIDIA_GPU_LABEL].actual_instance
     elif constants.TPU_LABEL in resources.limits:
         device = constants.TPU_DEVICE_TYPE
-        device_count = resources.limits[constants.TPU_LABEL]
+        device_count = resources.limits[constants.TPU_LABEL].actual_instance
     elif constants.CPU_LABEL in resources.limits:
         device = constants.CPU_DEVICE_TYPE
-        device_count = resources.limits[constants.CPU_LABEL]
+        device_count = resources.limits[constants.CPU_LABEL].actual_instance
     else:
         raise Exception(
             f"Unknown device type in the container resources: {resources.limits}"
         )
-
-    # Num procs override the container resources for the Trainer node.
-    if num_procs and num_procs.isdigit():
-        device_count = num_procs
+    if device_count is None:
+        raise Exception(f"Failed to get device count for resources: {resources.limits}")
 
     return device, device_count
 
 
-# TODO (andreyvelich): Discuss how to make this validation easier for users.
-def validate_trainer(trainer: types.Trainer):
-    """
-    Validate that trainer has the correct configuration.
-    """
-
-    if (
-        trainer.func or trainer.func_args or trainer.packages_to_install
-    ) and trainer.fine_tuning_config:
-        raise ValueError(
-            "Trainer function parameters and fine tuning config can't be set together"
-        )
-
-
 # TODO (andreyvelich): Discuss if we want to support V1ResourceRequirements resources as input.
-def get_resources_per_node(resources_per_node: dict) -> client.V1ResourceRequirements:
+def get_resources_per_node(
+    resources_per_node: dict,
+) -> models.IoK8sApiCoreV1ResourceRequirements:
     """
     Get the Trainer resources for the training node from the given dict.
     """
 
     # Convert all keys in resources to lowercase.
-    resources = {k.lower(): v for k, v in resources_per_node.items()}
+    resources = {
+        k.lower(): models.IoK8sApimachineryPkgApiResourceQuantity(v)
+        for k, v in resources_per_node.items()
+    }
     if "gpu" in resources:
         resources["nvidia.com/gpu"] = resources.pop("gpu")
 
-    resources = client.V1ResourceRequirements(
+    resources = models.IoK8sApiCoreV1ResourceRequirements(
         requests=resources,
         limits=resources,
     )
@@ -211,17 +189,6 @@ def get_script_for_python_packages(
     return script_for_python_packages
 
 
-def get_lora_config(lora_config: types.LoraConfig) -> List[client.V1EnvVar]:
-    """
-    Get the TrainJob env from the given Lora config.
-    """
-
-    env = client.V1EnvVar(
-        name=constants.ENV_LORA_CONFIG, value=json.dumps(lora_config.__dict__)
-    )
-    return [env]
-
-
 def get_dataset_config(
     dataset_config: Optional[types.HuggingFaceDatasetConfig] = None,
 ) -> Optional[models.TrainerV1alpha1DatasetConfig]:
@@ -233,7 +200,7 @@ def get_dataset_config(
 
     # TODO (andreyvelich): Support more parameters.
     ds_config = models.TrainerV1alpha1DatasetConfig(
-        storage_uri=(
+        storageUri=(
             dataset_config.storage_uri
             if dataset_config.storage_uri.startswith("hf://")
             else "hf://" + dataset_config.storage_uri
@@ -254,7 +221,7 @@ def get_model_config(
 
     # TODO (andreyvelich): Support more parameters.
     m_config = models.TrainerV1alpha1ModelConfig(
-        input=models.TrainerV1alpha1InputModel(storage_uri=model_config.storage_uri)
+        input=models.TrainerV1alpha1InputModel(storageUri=model_config.storage_uri)
     )
 
     return m_config

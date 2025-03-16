@@ -54,11 +54,15 @@ spec:
                         description: |-
                           Implementation name for the MPI to create the appropriate hostfile.
                           Defaults to OpenMPI.
+                        enum:
+                        - OpenMPI
                         type: string
                       numProcPerNode:
+                        default: 1
                         description: |-
                           Number of processes per node.
                           This value is equal to the number of slots for each node in the hostfile.
+                          Defaults to 1.
                         format: int32
                         type: integer
                       runLauncherAsNode:
@@ -68,6 +72,7 @@ spec:
                           Defaults to false.
                         type: boolean
                       sshAuthMountPath:
+                        default: /root/.ssh
                         description: |-
                           Directory where SSH keys are mounted.
                           Defaults to /root/.ssh.

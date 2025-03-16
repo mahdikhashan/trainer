@@ -22,6 +22,9 @@ jobs:
           - component-name: dataset-initializer
             dockerfile: cmd/initializer/dataset/Dockerfile
             platforms: linux/amd64,linux/arm64
+          - component-name: torchtune-trainer
+            dockerfile: cmd/trainers/torchtune/Dockerfile
+            platforms: linux/amd64,linux/arm64
 
     steps:
       - name: Checkout

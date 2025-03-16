@@ -29,16 +29,24 @@ help: ## Display this help.
 
 ##@ Development
 
+K8S_VERSION ?= 1.32.0
+
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
 # Tool Binaries
 LOCALBIN ?= $(PROJECT_DIR)/bin
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-ENVTEST ?= $(LOCALBIN)/setup-envtest
 
-ENVTEST_K8S_VERSION ?= 1.31
+GINKGO ?= $(LOCALBIN)/ginkgo
+ENVTEST ?= $(LOCALBIN)/setup-envtest
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+KIND ?= $(LOCALBIN)/kind
 
 # Instructions to download tools for development.
+
+.PHONY: ginkgo
+ginkgo: ## Download the ginkgo binary if required.
+	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@$(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
+
 .PHONY: envtest
 envtest: ## Download the setup-envtest binary if required.
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.20
@@ -46,6 +54,10 @@ envtest: ## Download the setup-envtest binary if required.
 .PHONY: controller-gen
 controller-gen: ## Download the controller-gen binary if required.
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2
+
+.PHONY: kind
+kind: ## Download Kind binary if required.
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kind@$(shell go list -m -f '{{.Version}}' sigs.k8s.io/kind)
 
 # Download external CRDs for Go integration testings.
 EXTERNAL_CRDS_DIR ?= $(PROJECT_DIR)/manifests/external-crds
@@ -105,9 +117,10 @@ test: ## Run Go unit test.
 	go test $(shell go list ./... | grep -v '/test/') -coverprofile cover.out
 
 .PHONY: test-integration
-test-integration: envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./test/... -coverprofile cover.out
+test-integration: ginkgo envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(K8S_VERSION) -p path)" $(GINKGO) -v ./test/integration/... -coverprofile cover.out
 
+.PHONY: test-python
 test-python: ## Run Python unit test.
 	export PYTHONPATH=$(PROJECT_DIR)
 	pip install pytest
@@ -118,9 +131,26 @@ test-python: ## Run Python unit test.
 	pytest ./pkg/initializer/model
 	pytest ./pkg/initializer/utils
 
+.PHONY: test-python-integration
 test-python-integration: ## Run Python integration test.
 	export PYTHONPATH=$(PROJECT_DIR)
 	pip install pytest
 	pip install -r ./cmd/initializer/dataset/requirements.txt
 
 	pytest ./test/integration/initializer
+
+.PHONY: test-e2e-setup-cluster
+test-e2e-setup-cluster: kind ## Setup Kind cluster for e2e test.
+	KIND=$(KIND) K8S_VERSION=$(K8S_VERSION) ./hack/e2e-setup-cluster.sh
+
+.PHONY: test-e2e
+test-e2e: ginkgo ## Run Go e2e test.
+	$(GINKGO) -v ./test/e2e/...
+
+# Input and output location for Notebooks executed with Papermill.
+NOTEBOOK_INPUT=$(PROJECT_DIR)/examples/pytorch/image-classification/mnist.ipynb
+NOTEBOOK_OUTPUT=$(PROJECT_DIR)/artifacts/notebooks/trainer_output.ipynb
+PAPERMILL_TIMEOUT=900
+.PHONY: test-e2e-notebook
+test-e2e-notebook: ## Run Jupyter Notebook with Papermill.
+	NOTEBOOK_INPUT=$(NOTEBOOK_INPUT) NOTEBOOK_OUTPUT=$(NOTEBOOK_OUTPUT) PAPERMILL_TIMEOUT=$(PAPERMILL_TIMEOUT) ./hack/e2e-run-notebook.sh

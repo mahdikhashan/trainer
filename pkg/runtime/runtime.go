@@ -17,13 +17,21 @@ limitations under the License.
 package runtime
 
 import (
+	"iter"
 	"maps"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
-	kueuelr "sigs.k8s.io/kueue/pkg/util/limitrange"
+	"k8s.io/utils/ptr"
 
 	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	"github.com/kubeflow/trainer/pkg/constants"
+)
+
+var (
+	defaultPodSetsSyncer = func(*Info) {}
+	syncPodSets          = defaultPodSetsSyncer
 )
 
 type Info struct {
@@ -32,10 +40,11 @@ type Info struct {
 	Annotations map[string]string
 	// Original policy values from the runtime.
 	RuntimePolicy RuntimePolicy
-	// Trainer parameters to add to the RuntimeJobTemplate.
-	Trainer
 	// Scheduler parameters to add to the RuntimeJobTemplate.
 	*Scheduler
+	// TemplateSpec is TrainingRuntime Template object.
+	// ObjApply podSpecs and this PodSets should be kept in sync by info.SyncPodSetsToTemplateSpec().
+	TemplateSpec TemplateSpec
 }
 
 type RuntimePolicy struct {
@@ -43,13 +52,28 @@ type RuntimePolicy struct {
 	PodGroupPolicy *trainer.PodGroupPolicy
 }
 
-type Trainer struct {
-	NumNodes       *int32
-	NumProcPerNode string
-	Env            []corev1ac.EnvVarApplyConfiguration
-	ContainerPort  *corev1ac.ContainerPortApplyConfiguration
-	Volumes        []corev1ac.VolumeApplyConfiguration
-	VolumeMounts   []corev1ac.VolumeMountApplyConfiguration
+type TemplateSpec struct {
+	// ObjApply is ApplyConfiguration for the TrainingRuntimes Template field.
+	ObjApply any
+	// PodSets is a set of Pod extracted from ObjApply.
+	PodSets []PodSet
+}
+
+type PodSet struct {
+	Name string
+	// If Name is trainer-node, CountForNonTrainer is null.
+	// For Trainer, PodSet Count should be stored in Info.RuntimePolicy.MLPolicy.NumNodes.
+	CountForNonTrainer *int32
+	Containers         []Container
+	Volumes            []corev1ac.VolumeApplyConfiguration
+	Endpoints          iter.Seq[string]
+}
+
+type Container struct {
+	Name         string
+	Env          []corev1ac.EnvVarApplyConfiguration
+	Ports        []corev1ac.ContainerPortApplyConfiguration
+	VolumeMounts []corev1ac.VolumeMountApplyConfiguration
 }
 
 // TODO (andreyvelich): Potentially, we can add ScheduleTimeoutSeconds to the Scheduler for consistency.
@@ -57,6 +81,8 @@ type Scheduler struct {
 	PodLabels     map[string]string
 	TotalRequests map[string]TotalResourceRequest
 }
+
+// DEPRECATED: Replace all TotalResourceRequest usage with PodSet.
 
 type TotalResourceRequest struct {
 	Replicas    int32
@@ -68,16 +94,21 @@ type InfoOptions struct {
 	annotations     map[string]string
 	runtimePolicy   RuntimePolicy
 	podSpecReplicas []podSpecReplica
+	templateSpec    TemplateSpec
 }
 
 type InfoOption func(options *InfoOptions)
 
 var defaultOptions = InfoOptions{}
 
+// DEPRECATED: Replace all podSpecReplica usage with PodSet
+// once we remove TotalResourceRequest.
+
 type podSpecReplica struct {
-	replicas int32
-	name     string
-	podSpec  corev1.PodSpec
+	count             int32
+	name              string
+	podSpecApply      *corev1ac.PodSpecApplyConfiguration
+	singlePodRequests corev1.ResourceList
 }
 
 func WithLabels(labels map[string]string) InfoOption {
@@ -104,13 +135,31 @@ func WithPodGroupPolicy(pgPolicy *trainer.PodGroupPolicy) InfoOption {
 	}
 }
 
-func WithPodSpecReplicas(replicaName string, replicas int32, podSpec corev1.PodSpec) InfoOption {
+// DEPRECATED: Replace WithPodSpecReplicas with WithTemplateSpec
+// once we remove TotalResourceRequest.
+
+func WithPodSpecReplicas(
+	replicaName string, count int32, singlePodRequest corev1.ResourceList, podSpecApply *corev1ac.PodSpecApplyConfiguration,
+) InfoOption {
 	return func(o *InfoOptions) {
 		o.podSpecReplicas = append(o.podSpecReplicas, podSpecReplica{
-			name:     replicaName,
-			replicas: replicas,
-			podSpec:  podSpec,
+			name:              replicaName,
+			count:             max(count, 1),
+			podSpecApply:      podSpecApply,
+			singlePodRequests: singlePodRequest,
 		})
+	}
+}
+
+func WithTemplateSpec(objApply any) InfoOption {
+	return func(o *InfoOptions) {
+		o.templateSpec.ObjApply = objApply
+	}
+}
+
+func WithPodSetSyncer(syncer func(*Info)) InfoOption {
+	return func(o *InfoOptions) {
+		syncPodSets = syncer
 	}
 }
 
@@ -127,14 +176,30 @@ func NewInfo(opts ...InfoOption) *Info {
 		Scheduler: &Scheduler{
 			TotalRequests: make(map[string]TotalResourceRequest, len(options.podSpecReplicas)),
 		},
+		TemplateSpec: options.templateSpec,
 	}
 
 	for _, spec := range options.podSpecReplicas {
 		info.TotalRequests[spec.name] = TotalResourceRequest{
-			Replicas: spec.replicas,
-			// TODO: Need to address LimitRange and RuntimeClass.
-			PodRequests: kueuelr.TotalRequests(&spec.podSpec),
+			Replicas:    spec.count,
+			PodRequests: spec.singlePodRequests,
 		}
+		ps := PodSet{
+			Name:    spec.name,
+			Volumes: spec.podSpecApply.Volumes,
+		}
+		if spec.name != constants.JobTrainerNode {
+			ps.CountForNonTrainer = &spec.count
+		}
+		for _, container := range spec.podSpecApply.Containers {
+			ps.Containers = append(ps.Containers, Container{
+				Name:         *container.Name,
+				Env:          container.Env,
+				Ports:        container.Ports,
+				VolumeMounts: container.VolumeMounts,
+			})
+		}
+		info.TemplateSpec.PodSets = append(info.TemplateSpec.PodSets, ps)
 	}
 	if options.labels != nil {
 		info.Labels = options.labels
@@ -142,6 +207,34 @@ func NewInfo(opts ...InfoOption) *Info {
 	if options.annotations != nil {
 		info.Annotations = options.annotations
 	}
-
 	return info
+}
+
+func (i *Info) SyncPodSetsToTemplateSpec() {
+	syncPodSets(i)
+}
+
+func TemplateSpecApply[A any](info *Info) (*A, bool) {
+	spec, ok := info.TemplateSpec.ObjApply.(*A)
+	return spec, ok
+}
+
+func (i *Info) FindContainerByPodSetContainerName(psName, containerName string) *Container {
+	for psIdx, ps := range i.TemplateSpec.PodSets {
+		if ps.Name == psName {
+			for containerIdx, container := range ps.Containers {
+				if container.Name == containerName {
+					return &i.TemplateSpec.PodSets[psIdx].Containers[containerIdx]
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func RuntimeRefToRuntimeRegistryKey(runtimeRef trainer.RuntimeRef) string {
+	return schema.GroupKind{
+		Group: ptr.Deref(runtimeRef.APIGroup, ""),
+		Kind:  ptr.Deref(runtimeRef.Kind, ""),
+	}.String()
 }

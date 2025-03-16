@@ -770,10 +770,8 @@ spec:
     numNodes: 1
   template:
     spec:
-      startupPolicy:
-        startupPolicyOrder: InOrder
       replicatedJobs:
-        - name: Initializer
+        - name: initializer
           template:
             spec:
               template:
@@ -802,7 +800,10 @@ spec:
                     - name: model-initializer
                       persistentVolumeClaim:
                         claimName: model-initializer
-        - name: Node
+        - name: trainer-node
+          dependsOn:
+            - name: initializer
+              status: Complete
           template:
             spec:
               template:
@@ -1446,10 +1447,8 @@ spec:
     numNodes: 1
   template:
     spec:
-      startupPolicy:
-        startupPolicyOrder: InOrder
       replicatedJobs:
-        - name: Initializer
+        - name: initializer
           template:
             spec:
               template:
@@ -1480,7 +1479,10 @@ spec:
                     - name: model-initializer
                       persistentVolumeClaim:
                         claimName: model-initializer
-        - name: Node
+        - name: trainer-node
+          dependsOn:
+            - name: initializer
+              status: Complete
           template:
             spec:
               template:
@@ -1531,10 +1533,8 @@ spec:
     numNodes: 1
   template:
     spec:
-      startupPolicy:
-        startupPolicyOrder: InOrder
       replicatedJobs:
-        - name: Initializer
+        - name: initializer
           template:
             spec:
               template:
@@ -1565,7 +1565,10 @@ spec:
                     - name: model-initializer
                       persistentVolumeClaim:
                         claimName: model-initializer
-        - name: Node
+        - name: trainer-node
+          dependsOn:
+            - name: initializer
+              status: Complete
           template:
             spec:
               template:
@@ -1650,8 +1653,6 @@ spec:
       mpiImplementation: OpenMPI
       numProcPerNode: 5
   template:
-      startupPolicy:
-        startupPolicyOrder: InOrder
     replicatedJobs:
       - name: launcher
         template:
@@ -1664,6 +1665,9 @@ spec:
                     command:
                       - mpirun launch-job
       - name: trainer-node
+        dependsOn:
+          - name: launcher
+            status: Ready
         template:
           spec:
             template:
@@ -1691,6 +1695,63 @@ _Will be added after initial implementation for PyTorch._
 #### Jax Runtime
 
 _Will be added after initial implementation for PyTorch._
+
+## Pipeline Framework
+
+We introduce the framework as internal mechanism so that we can easily expand mechanism
+for combination of Runtimes and TrainJob.
+
+The framework is called as Kubeflow Trainer Pipeline Framework, and it has 4 phases as you can see the following
+overview.
+
+![Overview](./TrainerPipelineFrameworkOverview.drawio.svg)
+
+As described in the following, each phase is basically executed step by step although `Startup Phase` is executed only once
+during starting trainer-controller-manager:
+
+- `Startup Phase`: Initialize internal components at once when the `kubeflow-trainer-controller-manager` starts.
+- `PreExecution Phase`: This phase is executed as a part of admission validating webhooks triggered by TrainJob is created and updated.
+- `Build Phase`: This phase is executed to build child Kubernetes resources and deploy those to the cluster.
+- `PostExecution Phase`: This phase is executed after the `Build Phase`.
+
+As you can see in the diagram, each phase has 2 types of APIs, `Internal API` and `Extension Point`.
+The Extension Point is exposed and could be added operations within the scope of the Pipeline Framework Plugins Interfaces.
+These plugins are executed in any order.
+
+On the other hand, the Internal APIs are not exposed and could not add any operations as opposed to the Extension Point.
+
+![Kubeflow TrainerPipelineFramework](./TrainerPipelineFramework.drawio.svg)
+
+- `Startup Phase`:
+  - Internal API:
+    - `Initialize Kubeflow TrainerFrameworkPipeline`: Initialize entire Kubeflow TrainerPipelineFramework.
+    - `TrainJobController`: Set up TrainJob controller and register it to Manager.
+    - `Built-in Webhook Servers`: Set up Built-in Admission Webhook Servers and register those to Manager.
+    - `Start Manager`: Start Manager.
+  - Extension Point
+    - `WatchExtension`: This registers arbitrary reconciler builders for watching any kind of resources
+      and triggering TrainJob reconciliations.
+- `PreExecution Phase`:
+  - Extension Point:
+    - `CustomValidation`: This registers validators for validating any kind of resources to Admission Validating Webhook Servers
+      when TrainJob is created and updated.
+- `Build Phase`:
+  - Internal API:
+    - `ComponentDeployer`: This deploys built components (resources) to the cluster which is performed as a part of reconciler.
+  - Extension Point:
+    - `EnforcePodGroupPolicy`: This configures PodGroup specific parameters (e.x, specified in TrainingRuntime `.spec.podGroupPolicy`)
+      to any kind of resources like PodSpec.
+    - `EnforceMLPolicy`: This configure MachineLearning framework specific parameters (e.x, specified in TrainingRuntime `.spec.mlPolicy`)
+      to any kind of resources like PodSpec.
+    - `ComponentBuilder`: This builds Kubernetes resources leveraging `RuntimeInfo` and `TrainJob`.
+      `RuntimeInfo` is abstracted objects extracted from runtimes like TrainingRuntime and ClusterTrainingRuntime.
+- `PostExecution Phase`:
+  - Internal API:
+    - `SupendedCondition`: Check if TrainJob is suspended state, and then add `Suspended` condition to TrainJob.
+    - `CreatedConditon`: Check if TrainJob is created state, and then add `Created` condition to TrainJob.
+  - Extension Point:
+    - `TerminalCondition`: Check if TrainJob is terminated state, and then add `Complete` condition with
+      a propagated terminal reason and message from child Jobs to TrainJob.
 
 ## Migration from Kubeflow Training V1
 

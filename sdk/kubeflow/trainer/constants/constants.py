@@ -108,6 +108,12 @@ DATASET_PATH = os.path.join(WORKSPACE_PATH, "dataset")
 # The path where initializer downloads model.
 MODEL_PATH = os.path.join(WORKSPACE_PATH, "model")
 
+# The Job name for the launcher (e.g. mpirun launcher).
+JOB_LAUNCHER = "launcher"
+
+# The container name for the launcher
+CONTAINER_LAUNCHER = "launcher"
+
 # The Job name for the trainer nodes.
 JOB_TRAINER_NODE = "trainer-node"
 
@@ -123,6 +129,3 @@ CONTAINER_TRAINER = "trainer"
 
 # The Torch env name for the number of procs per node (e.g. number of GPUs per Pod).
 TORCH_ENV_NUM_PROC_PER_NODE = "PET_NPROC_PER_NODE"
-
-# Env variable for the Lora config
-ENV_LORA_CONFIG = "LORA_CONFIG"
