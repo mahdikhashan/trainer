@@ -1,11 +1,5 @@
 # KEP-2442: JAX Runtimes for Trainer V2
 
-<!--
-This is the title of your KEP. Keep it short, simple, and descriptive. A good
-title can help communicate what the KEP is and should be considered as part of
-any review.
--->
-
 ## Summary
 
 <!--
