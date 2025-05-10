@@ -8,7 +8,7 @@ jobs:
   build-and-publish-to-ghcr:
     name: Build and Publish Images to Github Container Registry
     runs-on:
-      labels: ubuntu-latest-16-cores
+      labels: ubuntu-24.04-
 
     strategy:
       fail-fast: false
