@@ -25,7 +25,6 @@ demonstrate the interest in a KEP within the wider Kubeflow community.
 
 - GPU support (due to lack of available GPU testing infrastructure)
 - Complex end-to-end examples demonstrating the runtimes (focus is on the runtime implementation itself; examples may require specific infrastructure)
-- 
 
 ## Proposal
 
