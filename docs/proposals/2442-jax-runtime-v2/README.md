@@ -39,7 +39,7 @@ differential programming, large-scale physics simulations and many more.
 
 #### Story 1
 
-As a MLOps Engineer, I want to manage JAX distributed training jobs using the Kubeflow Trainer V2
+As a MLOps Engineer or Platform Engineer, I want to manage JAX distributed training jobs using the Kubeflow Trainer V2, so then I can provide blueprints for training of machine learning models on a kubernetes cluster to engineering teams.
 
 #### Story 2
 
