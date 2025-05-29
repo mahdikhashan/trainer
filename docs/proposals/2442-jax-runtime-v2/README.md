@@ -45,6 +45,10 @@ As a MLOps Engineer or Platform Engineer, I want to manage JAX distributed train
 
 As a Data Scientist, I want to use the Trainer V2 SDK to run a distributed training job from notebook, in this way I can incorporate multiple devices (CPUs, TPUs or GPUs) for my training task.
 
+#### Story 3
+
+As a Research Scientist, I want to train the prototype of my new LLM model written in JAX on multiple GPUs on Google Cloud Kubernetes Engine, Kubeflow Trainer V2 with JAX ClusterTrainingRuntime will enable this for me.
+
 ## Design Details
 
 <!--
