@@ -43,6 +43,7 @@ As a MLOps Engineer or Platform Engineer, I want to manage JAX distributed train
 
 #### Story 2
 
+As a Data Scientist, I want to use the Trainer V2 SDK to run a distributed training job from notebook, in this way I can incorporate multiple devices (CPUs, TPUs or GPUs) for my training task.
 
 ## Design Details
 
