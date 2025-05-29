@@ -6,13 +6,7 @@ This proposal implements key components of KEP-2170, introducing the Kubeflow Tr
 
 ## Motivation
 
-<!--
-This section is for explicitly listing the motivation, goals, and non-goals of
-this KEP. Describe why the change is important and the benefits to users. The
-motivation section can optionally provide links to [experience reports] to
-demonstrate the interest in a KEP within the wider Kubeflow community.
-[experience reports]: https://github.com/golang/go/wiki/ExperienceReports
--->
+JAX is a powerful Computation library created by Google, It is widely used in machine learning research and ranks as the third most wide used deep learning framework.
 
 ### Goals
 
@@ -39,36 +33,12 @@ nitty-gritty.
 
 ### User Stories (Optional)
 
-<!--
-Detail the things that people will be able to do if this KEP is implemented.
-Include as much detail as possible so that people can understand the "how" of
-the system. The goal here is to make this feel real for users without getting
-bogged down.
--->
-
 #### Story 1
+
+As a MLOps Engineer, I want to manage JAX distributed training jobs using the Kubeflow Trainer V2
 
 #### Story 2
 
-### Notes/Constraints/Caveats (Optional)
-
-<!--
-What are the caveats to the proposal?
-What are some important details that didn't come across above?
-Go in to as much detail as necessary here.
-This might be a good place to talk about core concepts and how they relate.
--->
-
-### Risks and Mitigations
-
-<!--
-What are the risks of this proposal, and how do we mitigate? Think broadly.
-For example, consider both security and how this will impact the larger
-Kubeflow ecosystem.
-How will security be reviewed, and by whom?
-How will UX be reviewed, and by whom?
-Consider including folks who also work outside the SIG or subproject.
--->
 
 ## Design Details
 
