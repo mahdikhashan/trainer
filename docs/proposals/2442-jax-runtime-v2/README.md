@@ -6,7 +6,8 @@ This proposal implements key components of KEP-2170, introducing the Kubeflow Tr
 
 ## Motivation
 
-JAX is a powerful Computation library created by Google, It is widely used in machine learning research and ranks as the third most wide used deep learning framework.
+JAX is a powerful Computation library created by Google, It is widely used in machine learning research and ranks as the third most wide used deep learning framework. JAX is more than a deep learning framework while suggests its potential in 
+differential programming, large-scale physics simulations and many more. 
 
 ### Goals
 
