@@ -1,5 +1,17 @@
 # KEP-2442: JAX Runtimes for Trainer V2
 
+- [Summary](#summary)
+- [Motivation](#motivation)
+  - [Goals](#goals)
+  - [Non-Goals](#non-goals)
+- [Proposal](#proposal)
+  - [User Stories (Optional)](#user-stories-optional)
+    - [Story 1](#story-1)
+    - [Story 2](#story-2)
+- [Design Details](#design-details)
+- [Alternatives](#alternatives)
+- [Implementation History](#implementation-history)
+
 ## Summary
 
 This proposal implements key components of KEP-2170, introducing the Kubeflow Training V2 API. Specifically, it focuses on creating the TrainingRuntime and ClusterTrainingRuntime for the JAX framework, built upon the Kubernetes JobSet API. These runtimes will serve as blueprints for model training (including LLMs) within cloud-native ML pipelines. This abstraction allows Data Scientists and MLOps Engineers to easily reuse standardized runtimes and launch training jobs, particularly via the SDK, without needing deep knowledge of underlying Kubernetes complexities.
@@ -62,13 +74,6 @@ expectations). Please adhere to the Kubeflow testing guidelines when drafting th
 existing tests to make this code solid enough prior to committing the changes necessary
 to implement this enhancement.
 
-#### Prerequisite testing updates
-
-<!--
-Based on reviewers feedback describe what additional tests need to be added prior
-implementing this enhancement to ensure the enhancements have also solid foundations.
--->
-
 #### Unit Tests
 
 <!--
@@ -103,36 +108,9 @@ Describe what tests will be added to ensure proper quality of the enhancement.
 After the implementation PR is merged, add the names of the tests here.
 -->
 
-### Graduation Criteria
-
-<!--
-This section is optional until Kubeflow has formally defined graduation criteria,
-feature gates, and a deprecation policy.
-
-Clearly define what it means for the feature to be implemented and
-considered stable.
-If the feature you are introducing has high complexity, consider adding graduation
-milestones with these graduation criteria:
-- [Maturity levels (`alpha`, `beta`, `stable`)][maturity-levels]
-- [Feature gate][feature gate] lifecycle
-- [Deprecation policy][deprecation-policy]
-[feature gate]: https://git.k8s.io/community/contributors/devel/sig-architecture/feature-gates.md
-[maturity-levels]: https://git.k8s.io/community/contributors/devel/sig-architecture/api_changes.md#alpha-beta-and-stable-versions
-[deprecation-policy]: https://kubernetes.io/docs/reference/using-api/deprecation-policy/
--->
-
 ## Implementation History
 
-<!--
-Major milestones in the lifecycle of a KEP should be tracked in this section.
-Major milestones might include:
-- KEP Creation
-- KEP Update(s)
-- Implementation Start
-- First Component and Kubeflow version where the KEP is released
-- Component and Kubeflow version where the KEP is graduated
-- When the KEP was retired or superseded
--->
+- 2025-05-28: Initial KEP draft created.
 
 ## Drawbacks
 
