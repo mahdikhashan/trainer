@@ -8,6 +8,7 @@
   - [User Stories (Optional)](#user-stories-optional)
     - [Story 1](#story-1)
     - [Story 2](#story-2)
+    - [Story 3](#story-3)
 - [Design Details](#design-details)
 - [Alternatives](#alternatives)
 - [Implementation History](#implementation-history)
@@ -51,12 +52,7 @@ As a Research Scientist, I want to train the prototype of my new LLM model writt
 
 ## Design Details
 
-<!--
-This section should contain enough information that the specifics of your
-change are understandable. This may include API specs (though not always
-required) or even code snippets. If there's any ambiguity about HOW your
-proposal will be implemented, this is the place to discuss them.
--->
+TODO
 
 ### Test Plan
 
@@ -70,49 +66,9 @@ expectations). Please adhere to the Kubeflow testing guidelines when drafting th
 existing tests to make this code solid enough prior to committing the changes necessary
 to implement this enhancement.
 
-#### Unit Tests
-
-<!--
-In principle every added code should have complete unit test coverage, so providing
-the exact set of tests will not bring additional value.
-However, if complete unit test coverage is not possible, explain the reason of it
-together with explanation why this is acceptable.
--->
-
-<!--
-Additionally, try to enumerate the core package you will be touching
-to implement this enhancement and provide the current unit coverage for those
-in the form of:
-- <package>: <date> - <current test coverage>
-This can inform certain test coverage improvements that we want to do before
-extending the production code to implement this enhancement.
--->
-
-- `<package>`: `<date>` - `<test coverage>`
-
-#### E2E tests
-
-<!--
-Describe what E2E tests will be added to ensure proper quality of the enhancement.
-After the implementation PR is merged, add the names of the tests here.
--->
-
-#### Integration tests
-
-<!--
-Describe what tests will be added to ensure proper quality of the enhancement.
-After the implementation PR is merged, add the names of the tests here.
--->
-
 ## Implementation History
 
 - 2025-05-28: Initial KEP draft created.
-
-## Drawbacks
-
-<!--
-Why should this KEP _not_ be implemented?
--->
 
 ## Alternatives
 
