@@ -10,11 +10,11 @@ spec:
       successPolicy:
         operator: All
         targetReplicatedJobs:
-          - process
+          - node
       failurePolicy:
         # TODO(mahdi): add this
       replicatedJobs:
-        - name: process
+        - name: node
           template:
             metadata:
               labels:
