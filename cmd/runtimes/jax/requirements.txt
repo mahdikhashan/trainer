@@ -1,3 +1,8 @@
 
-# JAX libraries
+# JAX libraries, for CPU, NVIDIA GPU and TPU
+# Instructions: https://pypi.org/project/jax/
+# TODO(mahdi): check with Shao whether its a good practice to install
+# all target processors in a simple requirements file
 jax==0.6.1
+jax[cuda12]==0.6.1
+jax[tpu]==0.6.1
