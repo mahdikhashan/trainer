@@ -19,5 +19,10 @@ RUN ls -lha /usr/local/include/gloo
 
 RUN cd gloo && git rev-parse HEAD
 
-# 2025-05-31 17:10:47 -rw-r--r--  1 root root 1.6M May 31 15:01 libgloo.a
-CMD ["sh", "-c", "ls -lha /usr/local/lib | grep gloo"]
+WORKDIR /home/jax-runtime
+
+# TODO(mahdi): it should be 'COPY cmd/runtimes/jax/requirements.txt .' when finalized
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+CMD ["sh", "-c", "ls -lha /usr/local/lib | grep gloo && pip list | grep jax"]
