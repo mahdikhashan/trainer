@@ -3,7 +3,38 @@ kind: ClusterTrainingRuntime
 metadata:
   name: jax-distributed
 spec:
-  # policy
+  mlPolicy:
+    numNodes: 2
   template:
     spec:
-      # TODO
+      successPolicy:
+        operator: All
+        targetReplicatedJobs:
+          - process
+      failurePolicy:
+        # TODO(mahdi): add this
+      replicatedJobs:
+        - name: process
+          replicas: 1
+          template:
+            metadata:
+              labels:
+                trainer.kubeflow.org/trainjob-ancestor-step: trainer
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: node
+                      image: ghcr.io/kubeflow/trainer/jax-runtime
+                      securityContext:
+                        runAsUser: 1000
+                      command:
+                        - bash
+                        - -c
+                        - |
+                          echo "JAX Distributed Runtime"
+
+                          echo "--------------------------------------"
+                          set -e
+                          python --version
+                          pip list | grep jax
