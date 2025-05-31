@@ -4,7 +4,7 @@ metadata:
   name: jax-distributed
 spec:
   mlPolicy:
-    numNodes: 2
+    numNodes: 1
   template:
     spec:
       successPolicy:
