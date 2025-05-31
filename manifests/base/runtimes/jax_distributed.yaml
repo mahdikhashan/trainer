@@ -1,0 +1,9 @@
+apiVersion: trainer.kubeflow.org/v1alpha1
+kind: ClusterTrainingRuntime
+metadata:
+  name: jax-distributed
+spec:
+  # policy
+  template:
+    spec:
+      # TODO
