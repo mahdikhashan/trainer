@@ -102,13 +102,7 @@ In JAX, a **host** refers to a physical or virtual machine that participates in 
 
 **JAX Process/Controller**
 
-A **JAX process** (or sometimes called a **controller**) is a Python process running the JAX program. There is exactly one JAX process per host. This process is responsible for:
-
-- Executing the training loop
-
-- Managing all local devices
-
-- Communicating with other JAX processes over the network for synchronization
+A **JAX process** (or sometimes called a **controller**) is a Python process running the JAX program. There is exactly one JAX process per host. This process is responsible for executing the training loop, managing all local devices, and communicating with other JAX processes over the network for synchronization
 
 JAX uses **Single Program Multiple Data (SPMD)** across these processes.
 
