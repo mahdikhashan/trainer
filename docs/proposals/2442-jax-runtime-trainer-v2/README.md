@@ -100,7 +100,7 @@ In JAX, a **host** refers to a physical or virtual machine that participates in 
 
 >In Kubernetes, a host maps to a Node, and in the runtime implementation, one Pod is typically scheduled per host.
 
-**JAX Process**
+**JAX Process/Controller**
 
 A **JAX process** (or sometimes called a **controller**) is a Python process running the JAX program. There is exactly one JAX process per host. This process is responsible for:
 
