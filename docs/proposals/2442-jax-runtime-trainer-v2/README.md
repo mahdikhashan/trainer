@@ -118,9 +118,6 @@ Devices refer to individual compute units on a host (like CPU cores, GPUs, or TP
 
 Each JAX process has access to **all devices on its host**. There is **no need to spawn multiple processes per GPU**, unlike PyTorch.
 
-**Controller**
-
-The **controller** is conceptually the same as the JAX process. In distributed setups, each host runs one controller that communicates with peers (other controllers) to coordinate the training.
 
 **Pod**
 
