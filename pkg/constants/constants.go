@@ -6,7 +6,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
+	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 )
 
 const (
@@ -128,6 +128,9 @@ const (
 	// TorchTuneArgRdzvEndpoint is the arg name for the rendezvous endpoint.
 	TorchTuneArgRdzvEndpoint string = "--rdzv_endpoint"
 
+	// TorchTuneArgConfig is the arg name for the config file.
+	TorchTuneArgConfig string = "--config"
+
 	// TorchTuneFullFinetuneSingleDevice Recipe is the recipe for the single device full finetune.
 	TorchTuneFullFinetuneSingleDevice string = "full_finetune_single_device"
 
@@ -142,6 +145,15 @@ const (
 
 	// TorchTuneFullFinetuneMultiNodesConfigSuffix is the config suffix for the multi node distributed full finetune.
 	TorchTuneFullFinetuneMultiNodesConfigSuffix string = "_full_multinode"
+
+	// TorchTuneModelOutputDir is the config item name for the model output directory.
+	TorchTuneModelOutputDir string = "output_dir"
+
+	// TorchTuneTokenizerPath is the config item name for the tokenizer path.
+	TorchTuneTokenizerPath string = "tokenizer.path"
+
+	// TorchTuneCheckpointerDir is the config item name for the checkpointer directory.
+	TorchTuneCheckpointDir string = "checkpointer.checkpoint_dir"
 )
 
 const (
@@ -170,4 +182,7 @@ var (
 
 	// TorchTuneEntrypoint is the entrypoint for the torchtune.
 	TorchTuneEntrypoint = []string{"tune", "run"}
+
+	// TorchTuneImmutableConfigs is the set of immutable configs for the TorchTune Trainer.
+	TorchTuneImmutableConfigs = sets.New(TorchTuneModelOutputDir, TorchTuneTokenizerPath, TorchTuneCheckpointDir)
 )

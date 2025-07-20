@@ -13155,32 +13155,14 @@
         }
       },
       "trainer.v1alpha1.ContainerOverride": {
-        "description": "ContainerOverride represents parameters that can be overridden using PodSpecOverrides. Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.",
+        "description": "ContainerOverride represents parameters that can be overridden using PodSpecOverrides.",
         "type": "object",
         "required": [
           "name"
         ],
         "properties": {
-          "args": {
-            "description": "Arguments to the entrypoint for the training container.",
-            "type": "array",
-            "items": {
-              "type": "string",
-              "default": ""
-            },
-            "x-kubernetes-list-type": "atomic"
-          },
-          "command": {
-            "description": "Entrypoint commands for the training container.",
-            "type": "array",
-            "items": {
-              "type": "string",
-              "default": ""
-            },
-            "x-kubernetes-list-type": "atomic"
-          },
           "env": {
-            "description": "List of environment variables to set in the container. These values will be merged with the TrainingRuntime's environments.",
+            "description": "List of environment variables to set in the container. These values will be merged with the TrainingRuntime's environments. These values can't be set for container with the name: `node`, `dataset-initializer`, or `model-initializer`. For those containers the envs can only be set via Trainer or Initializer APIs.",
             "type": "array",
             "items": {
               "default": {},
@@ -13194,19 +13176,6 @@
               "name"
             ],
             "x-kubernetes-list-type": "map"
-          },
-          "envFrom": {
-            "description": "List of sources to populate environment variables in the container. These   values will be merged with the TrainingRuntime's environments.",
-            "type": "array",
-            "items": {
-              "default": {},
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/io.k8s.api.core.v1.EnvFromSource"
-                }
-              ]
-            },
-            "x-kubernetes-list-type": "atomic"
           },
           "name": {
             "description": "Name for the container. TrainingRuntime must have this container.",
@@ -13512,7 +13481,7 @@
         ],
         "properties": {
           "containers": {
-            "description": "Overrides for the containers in the desired job templates.",
+            "description": "Overrides for the containers in the target job templates.",
             "type": "array",
             "items": {
               "default": {},
@@ -13528,7 +13497,7 @@
             "x-kubernetes-list-type": "map"
           },
           "initContainers": {
-            "description": "Overrides for the init container in the desired job templates.",
+            "description": "Overrides for the init container in the target job templates.",
             "type": "array",
             "items": {
               "default": {},
@@ -13544,12 +13513,28 @@
             "x-kubernetes-list-type": "map"
           },
           "nodeSelector": {
-            "description": "Override for the node selector to place Pod on the specific mode.",
+            "description": "Override for the node selector to place Pod on the specific node.",
             "type": "object",
             "additionalProperties": {
               "type": "string",
               "default": ""
             }
+          },
+          "schedulingGates": {
+            "description": "SchedulingGates overrides the scheduling gates of the Pods in the target job templates. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-scheduling-readiness/",
+            "type": "array",
+            "items": {
+              "default": {},
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/io.k8s.api.core.v1.PodSchedulingGate"
+                }
+              ]
+            },
+            "x-kubernetes-list-map-keys": [
+              "name"
+            ],
+            "x-kubernetes-list-type": "map"
           },
           "serviceAccountName": {
             "description": "Override for the service account.",
@@ -13582,7 +13567,7 @@
             "x-kubernetes-list-type": "atomic"
           },
           "volumes": {
-            "description": "Overrides for the Pod volume configuration.",
+            "description": "Overrides for the Pod volume configurations.",
             "type": "array",
             "items": {
               "default": {},

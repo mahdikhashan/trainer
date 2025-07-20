@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
@@ -24,12 +25,13 @@ import (
 // with apply.
 type PodSpecOverrideApplyConfiguration struct {
 	TargetJobs         []PodSpecOverrideTargetJobApplyConfiguration `json:"targetJobs,omitempty"`
-	Containers         []ContainerOverrideApplyConfiguration        `json:"containers,omitempty"`
-	InitContainers     []ContainerOverrideApplyConfiguration        `json:"initContainers,omitempty"`
-	Volumes            []v1.VolumeApplyConfiguration                `json:"volumes,omitempty"`
 	ServiceAccountName *string                                      `json:"serviceAccountName,omitempty"`
 	NodeSelector       map[string]string                            `json:"nodeSelector,omitempty"`
 	Tolerations        []v1.TolerationApplyConfiguration            `json:"tolerations,omitempty"`
+	Volumes            []v1.VolumeApplyConfiguration                `json:"volumes,omitempty"`
+	InitContainers     []ContainerOverrideApplyConfiguration        `json:"initContainers,omitempty"`
+	Containers         []ContainerOverrideApplyConfiguration        `json:"containers,omitempty"`
+	SchedulingGates    []corev1.PodSchedulingGate                   `json:"schedulingGates,omitempty"`
 }
 
 // PodSpecOverrideApplyConfiguration constructs a declarative configuration of the PodSpecOverride type for use with
@@ -47,45 +49,6 @@ func (b *PodSpecOverrideApplyConfiguration) WithTargetJobs(values ...*PodSpecOve
 			panic("nil value passed to WithTargetJobs")
 		}
 		b.TargetJobs = append(b.TargetJobs, *values[i])
-	}
-	return b
-}
-
-// WithContainers adds the given value to the Containers field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Containers field.
-func (b *PodSpecOverrideApplyConfiguration) WithContainers(values ...*ContainerOverrideApplyConfiguration) *PodSpecOverrideApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithContainers")
-		}
-		b.Containers = append(b.Containers, *values[i])
-	}
-	return b
-}
-
-// WithInitContainers adds the given value to the InitContainers field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the InitContainers field.
-func (b *PodSpecOverrideApplyConfiguration) WithInitContainers(values ...*ContainerOverrideApplyConfiguration) *PodSpecOverrideApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithInitContainers")
-		}
-		b.InitContainers = append(b.InitContainers, *values[i])
-	}
-	return b
-}
-
-// WithVolumes adds the given value to the Volumes field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Volumes field.
-func (b *PodSpecOverrideApplyConfiguration) WithVolumes(values ...*v1.VolumeApplyConfiguration) *PodSpecOverrideApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithVolumes")
-		}
-		b.Volumes = append(b.Volumes, *values[i])
 	}
 	return b
 }
@@ -121,6 +84,55 @@ func (b *PodSpecOverrideApplyConfiguration) WithTolerations(values ...*v1.Tolera
 			panic("nil value passed to WithTolerations")
 		}
 		b.Tolerations = append(b.Tolerations, *values[i])
+	}
+	return b
+}
+
+// WithVolumes adds the given value to the Volumes field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Volumes field.
+func (b *PodSpecOverrideApplyConfiguration) WithVolumes(values ...*v1.VolumeApplyConfiguration) *PodSpecOverrideApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithVolumes")
+		}
+		b.Volumes = append(b.Volumes, *values[i])
+	}
+	return b
+}
+
+// WithInitContainers adds the given value to the InitContainers field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the InitContainers field.
+func (b *PodSpecOverrideApplyConfiguration) WithInitContainers(values ...*ContainerOverrideApplyConfiguration) *PodSpecOverrideApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithInitContainers")
+		}
+		b.InitContainers = append(b.InitContainers, *values[i])
+	}
+	return b
+}
+
+// WithContainers adds the given value to the Containers field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the Containers field.
+func (b *PodSpecOverrideApplyConfiguration) WithContainers(values ...*ContainerOverrideApplyConfiguration) *PodSpecOverrideApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithContainers")
+		}
+		b.Containers = append(b.Containers, *values[i])
+	}
+	return b
+}
+
+// WithSchedulingGates adds the given value to the SchedulingGates field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the SchedulingGates field.
+func (b *PodSpecOverrideApplyConfiguration) WithSchedulingGates(values ...corev1.PodSchedulingGate) *PodSpecOverrideApplyConfiguration {
+	for i := range values {
+		b.SchedulingGates = append(b.SchedulingGates, values[i])
 	}
 	return b
 }

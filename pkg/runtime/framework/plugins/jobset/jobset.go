@@ -22,6 +22,7 @@ import (
 	"maps"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,14 +41,15 @@ import (
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	jobsetv1alpha2ac "sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
 
-	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
-	"github.com/kubeflow/trainer/pkg/constants"
-	"github.com/kubeflow/trainer/pkg/runtime"
-	"github.com/kubeflow/trainer/pkg/runtime/framework"
+	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
+	"github.com/kubeflow/trainer/v2/pkg/constants"
+	"github.com/kubeflow/trainer/v2/pkg/runtime"
+	"github.com/kubeflow/trainer/v2/pkg/runtime/framework"
 )
 
 var (
-	runtimeRefPath = field.NewPath("spec").Child("runtimeRef")
+	runtimeRefPath      = field.NewPath("spec").Child("runtimeRef")
+	podSpecOverridePath = field.NewPath("spec").Child("podSpecOverrides")
 )
 
 type JobSet struct {
@@ -80,7 +82,7 @@ func (j *JobSet) Name() string {
 	return Name
 }
 
-func (j *JobSet) Validate(info *runtime.Info, _, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
+func (j *JobSet) Validate(ctx context.Context, info *runtime.Info, oldObj, newObj *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
 	var allErrs field.ErrorList
 	jobSetSpec, ok := runtime.TemplateSpecApply[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](info)
 	if !ok {
@@ -91,6 +93,10 @@ func (j *JobSet) Validate(info *runtime.Info, _, newObj *trainer.TrainJob) (admi
 	rJobContainerNames := make(map[string]sets.Set[string])
 	for _, rJob := range jobSetSpec.ReplicatedJobs {
 		rJobContainerNames[*rJob.Name] = sets.New[string]()
+		// Names of initContainer and containers are unique.
+		for _, c := range rJob.Template.Spec.Template.Spec.InitContainers {
+			rJobContainerNames[*rJob.Name].Insert(*c.Name)
+		}
 		for _, c := range rJob.Template.Spec.Template.Spec.Containers {
 			rJobContainerNames[*rJob.Name].Insert(*c.Name)
 		}
@@ -102,7 +108,6 @@ func (j *JobSet) Validate(info *runtime.Info, _, newObj *trainer.TrainJob) (admi
 		} else if !containers.Has(constants.DatasetInitializer) {
 			allErrs = append(allErrs, field.Invalid(runtimeRefPath, newObj.Spec.RuntimeRef, fmt.Sprintf("must have container with name - %s in the %s job", constants.DatasetInitializer, constants.DatasetInitializer)))
 		}
-
 	}
 
 	if newObj.Spec.Initializer != nil && newObj.Spec.Initializer.Model != nil {
@@ -113,7 +118,76 @@ func (j *JobSet) Validate(info *runtime.Info, _, newObj *trainer.TrainJob) (admi
 		}
 	}
 
+	allErrs = append(allErrs, j.checkPodSpecOverridesImmutability(ctx, oldObj, newObj)...)
+
+	// TODO (andreyvelich): Validate Volumes, VolumeMounts, and Tolerations.
+	targetJobNames := sets.New[string]()
+	for _, podSpecOverride := range newObj.Spec.PodSpecOverrides {
+		// Validate that there are no duplicate target job names within the same PodSpecOverride
+		for _, targetJob := range podSpecOverride.TargetJobs {
+			if targetJobNames.Has(targetJob.Name) {
+				allErrs = append(allErrs, field.Duplicate(podSpecOverridePath, targetJob.Name))
+			}
+			targetJobNames.Insert(targetJob.Name)
+		}
+
+		for _, targetJob := range podSpecOverride.TargetJobs {
+			containers, ok := rJobContainerNames[targetJob.Name]
+			if !ok {
+				allErrs = append(allErrs, field.Invalid(podSpecOverridePath, newObj.Spec.PodSpecOverrides, "must not have targetJob that doesn't exist in the runtime job template"))
+			}
+			for _, overrideContainer := range podSpecOverride.InitContainers {
+				if !containers.Has(overrideContainer.Name) {
+					allErrs = append(allErrs, field.Invalid(podSpecOverridePath, newObj.Spec.PodSpecOverrides, fmt.Sprintf("must not have initContainer that doesn't exist in the runtime job %s", targetJob.Name)))
+				}
+			}
+			for _, overrideContainer := range podSpecOverride.Containers {
+				if !containers.Has(overrideContainer.Name) {
+					allErrs = append(allErrs, field.Invalid(podSpecOverridePath, newObj.Spec.PodSpecOverrides, fmt.Sprintf("must not have container that doesn't exist in the runtime job %s", targetJob.Name)))
+					// Trainer and Initializer APIs should be used to set TrainJob envs for the reserved containers.
+				} else if len(overrideContainer.Env) > 0 && (overrideContainer.Name == constants.DatasetInitializer || overrideContainer.Name == constants.ModelInitializer || overrideContainer.Name == constants.Node) {
+					allErrs = append(allErrs, field.Invalid(podSpecOverridePath, newObj.Spec.PodSpecOverrides,
+						fmt.Sprintf("must not have envs for the %s, %s, %s containers", constants.DatasetInitializer, constants.ModelInitializer, constants.Node)))
+				}
+			}
+		}
+	}
+
 	return nil, allErrs
+}
+
+func (j *JobSet) checkPodSpecOverridesImmutability(ctx context.Context, oldObj, newObj *trainer.TrainJob) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if oldObj == nil {
+		// Checking immutability makes only sense on updates
+		return allErrs
+	}
+
+	jobSet := &jobsetv1alpha2.JobSet{}
+	changed := !equality.Semantic.DeepEqual(oldObj.Spec.PodSpecOverrides, newObj.Spec.PodSpecOverrides)
+	suspended := ptr.Equal(newObj.Spec.Suspend, ptr.To(true))
+	if changed {
+		if !suspended {
+			allErrs = append(allErrs, field.Forbidden(podSpecOverridePath, "PodSpecOverrides can only be modified when the TrainJob is suspended"))
+		} else if err := j.client.Get(ctx, client.ObjectKeyFromObject(newObj), jobSet); client.IgnoreNotFound(err) != nil {
+			allErrs = append(allErrs, field.InternalError(podSpecOverridePath, err))
+		} else {
+			// If the JobSet exists, check whether it's inactive
+			// so changes won't have side effects on the JobSet's Pods
+			// that are still running.
+			// This can happen while the TrainJob is transitioning out
+			// from unsuspended state.
+			for _, replicatedJob := range jobSet.Status.ReplicatedJobsStatus {
+				if replicatedJob.Active > 0 {
+					allErrs = append(allErrs, field.Forbidden(podSpecOverridePath,
+						fmt.Sprintf("PodSpecOverrides cannot be modified when the JobSet's ReplicatedJob %s is still active", replicatedJob.Name)))
+				}
+			}
+		}
+	}
+
+	return allErrs
 }
 
 func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
@@ -195,7 +269,6 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *traine
 		WithAnnotations(maps.Clone(info.Annotations)).
 		WithSpec(jobSetSpec))
 
-	// TODO (andreyvelich): Add support for the PodSpecOverride.
 	// TODO (andreyvelich): Refactor the builder with wrappers for PodSpec.
 	// TODO: Once we remove deprecated runtime.Info.Trainer, we should remove JobSet Builder with DeprecatedTrainer().
 	jobSet := jobSetBuilder.

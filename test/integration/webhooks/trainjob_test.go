@@ -26,11 +26,11 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	trainer "github.com/kubeflow/trainer/pkg/apis/trainer/v1alpha1"
-	"github.com/kubeflow/trainer/pkg/constants"
-	testingutil "github.com/kubeflow/trainer/pkg/util/testing"
-	"github.com/kubeflow/trainer/test/integration/framework"
-	"github.com/kubeflow/trainer/test/util"
+	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
+	"github.com/kubeflow/trainer/v2/pkg/constants"
+	testingutil "github.com/kubeflow/trainer/v2/pkg/util/testing"
+	"github.com/kubeflow/trainer/v2/test/integration/framework"
+	"github.com/kubeflow/trainer/v2/test/util"
 )
 
 var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
@@ -303,6 +303,23 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 						Obj()
 				},
 				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail in creating trainJob with podSpecOverrides have duplicated targetJob",
+				func() *trainer.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "invalid-pod-spec-overrides").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						PodSpecOverrides([]trainer.PodSpecOverride{
+							{
+								TargetJobs:         []trainer.PodSpecOverrideTargetJob{{Name: "node"}},
+								ServiceAccountName: ptr.To("custom-sa"),
+							},
+							{
+								TargetJobs:         []trainer.PodSpecOverrideTargetJob{{Name: "node"}},
+								ServiceAccountName: ptr.To("custom-sa-two"),
+							},
+						}).
+						Obj()
+				},
+				testingutil.BeForbiddenError()),
 		)
 		ginkgo.DescribeTable("Defaulting TrainJob on creation", func(trainJob func() *trainer.TrainJob, wantTrainJob func() *trainer.TrainJob) {
 			created := trainJob()

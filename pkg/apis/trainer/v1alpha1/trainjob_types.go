@@ -236,30 +236,36 @@ type PodSpecOverride struct {
 	// +listType=atomic
 	TargetJobs []PodSpecOverrideTargetJob `json:"targetJobs"`
 
-	// Overrides for the containers in the desired job templates.
-	// +listType=map
-	// +listMapKey=name
-	Containers []ContainerOverride `json:"containers,omitempty"`
-
-	// Overrides for the init container in the desired job templates.
-	// +listType=map
-	// +listMapKey=name
-	InitContainers []ContainerOverride `json:"initContainers,omitempty"`
-
-	// Overrides for the Pod volume configuration.
-	// +listType=map
-	// +listMapKey=name
-	Volumes []corev1.Volume `json:"volumes,omitempty"`
-
 	// Override for the service account.
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	ServiceAccountName *string `json:"serviceAccountName,omitempty"`
 
-	// Override for the node selector to place Pod on the specific mode.
+	// Override for the node selector to place Pod on the specific node.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
 	// Override for the Pod's tolerations.
 	// +listType=atomic
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Overrides for the Pod volume configurations.
+	// +listType=map
+	// +listMapKey=name
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// Overrides for the init container in the target job templates.
+	// +listType=map
+	// +listMapKey=name
+	InitContainers []ContainerOverride `json:"initContainers,omitempty"`
+
+	// Overrides for the containers in the target job templates.
+	// +listType=map
+	// +listMapKey=name
+	Containers []ContainerOverride `json:"containers,omitempty"`
+
+	// SchedulingGates overrides the scheduling gates of the Pods in the target job templates.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-scheduling-readiness/
+	// +listType=map
+	// +listMapKey=name
+	SchedulingGates []corev1.PodSchedulingGate `json:"schedulingGates,omitempty"`
 }
 
 type PodSpecOverrideTargetJob struct {
@@ -268,29 +274,17 @@ type PodSpecOverrideTargetJob struct {
 }
 
 // ContainerOverride represents parameters that can be overridden using PodSpecOverrides.
-// Parameters from the Trainer, DatasetConfig, and ModelConfig will take precedence.
 type ContainerOverride struct {
 	// Name for the container. TrainingRuntime must have this container.
 	Name string `json:"name"`
 
-	// Entrypoint commands for the training container.
-	// +listType=atomic
-	Command []string `json:"command,omitempty"`
-
-	// Arguments to the entrypoint for the training container.
-	// +listType=atomic
-	Args []string `json:"args,omitempty"`
-
 	// List of environment variables to set in the container.
 	// These values will be merged with the TrainingRuntime's environments.
+	// These values can't be set for container with the name: `node`, `dataset-initializer`, or
+	// `model-initializer`. For those containers the envs can only be set via Trainer or Initializer APIs.
 	// +listType=map
 	// +listMapKey=name
 	Env []corev1.EnvVar `json:"env,omitempty"`
-
-	// List of sources to populate environment variables in the container.
-	// These   values will be merged with the TrainingRuntime's environments.
-	// +listType=atomic
-	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
 
 	// Pod volumes to mount into the container's filesystem.
 	// +listType=map
