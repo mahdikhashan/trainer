@@ -46,6 +46,7 @@ With this design, Platform Engineers can define standardized training runtimes, 
 - Implement ClusterTrainingRuntime for JAX, supporting distributed training with JAX (e.g. multi-controller JAX)
 - Build the necessary Docker images for JAX worker nodes used by the runtime
 - Implement the solution to work on CPU and GPU
+- Integrate with SDK and address any necessary enhancements
 - Document user guides for utilizing JAX ClusterTrainingRuntimes
 - Test the implementation thoroughly using unit tests and end-to-end (E2E) tests
 
