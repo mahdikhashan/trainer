@@ -71,7 +71,7 @@ The Python SDK with JAXRuntime may look as follows:
 ```python
 from kubeflow.trainer import TrainerClient, CustomTrainer
 
-def jax_train_mnist():
+def jax_train_mnist(args):
     # TODO: Add training logic using JAX
     pass
 
