@@ -51,8 +51,8 @@ With this design, Platform Engineers can define standardized training runtimes, 
 
 ### Non-Goals
 
-- No TPU support (duo to lack of available TPU testing infrastructure)
-- No GPU testing, tests will use CPUs
+- No TPU testing, tests will use CPU
+- No GPU testing, tests will use CPU
 
 ## Proposal
 
