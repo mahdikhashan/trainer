@@ -78,7 +78,9 @@ def jax_train_mnist():
 # Select the JAX runtime
 client = TrainerClient()
 jax_runtime = next(r for r in client.list_runtimes() if r.name == "jax-distributed")
-
+args = {
+ "lr": "0.03"
+}
 # Launch training job
 job_id = client.train(
     trainer=CustomTrainer(func=jax_train_mnist, func_args=args, num_nodes=3),
