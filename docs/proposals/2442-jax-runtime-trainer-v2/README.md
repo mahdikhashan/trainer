@@ -33,7 +33,7 @@ These usecases added on top of the new Runtime API for distributed training or c
 
 In general the motivation is to enable users to use Single-Program Multi-Data (SPMD) pattern with JAX Framework.
 
-With this design, Platform Engineers can define standardized training runtimes, while Data Scientists can easily customize them, through a simple SDK interface, without needing to understand Kubernetes internals.
+With this design, Platform Admins can define standardized training runtimes, while AI Practitioners can easily customize them, through a simple SDK interface, without needing to understand Kubernetes internals.
 
 **Benefits**
 
@@ -61,11 +61,11 @@ With this design, Platform Engineers can define standardized training runtimes, 
 
 #### Story 1
 
-As a Platform Engineer, I want to manage JAX distributed training jobs using the Kubeflow Trainer V2, so then I can provide blueprints for training of machine learning models on a kubernetes cluster to engineering teams.
+As a Platform Admin, I want to manage JAX distributed training jobs using the Kubeflow Trainer V2, so then I can provide blueprints for training of machine learning models on a kubernetes cluster to engineering teams.
 
 #### Story 2
 
-As a Data Scientist, I want to use the Trainer V2 SDK to run a distributed training job from notebook, in this way I can incorporate multiple devices for my training task.
+As an AI Practitioner, I want to use the Trainer V2 SDK to run a distributed training job from notebook, in this way I can incorporate multiple devices for my training task.
 
 The Python SDK with JAXRuntime may look as follows:
 
@@ -130,8 +130,8 @@ This section explains the architecture and flow of executing a distributed JAX t
 
 ![user-roles](./drawing.drawio.svg)
 
-#### 1. Platform Engineer Prepares the Training Environment
-- A **Platform Engineer** sets up the **Cluster Training Runtime** with details like:
+#### 1. Platform Admins Prepares the Training Environment
+- A **Platform Admins** sets up the **Cluster Training Runtime** with details like:
   - Container image
   - Entrypoint
   - Framework (e.g., JAX)
@@ -141,8 +141,8 @@ This section explains the architecture and flow of executing a distributed JAX t
 #### 2. Training Runtime is Retrieved
 - When a user requests a training job, the system **fetches the runtime spec** to know how to run the job.
 
-#### 3. Data Scientist or ML Researcher Creates the Training Job
-- A **Data Scientist** or **ML Researcher** creates a training job using:
+#### 3. AI Practitioner Creates the Training Job
+- A **AI Practitioners** creates a training job using:
   - The **Kubeflow Python SDK**, or
   - A `kubectl` command.
 - They provide the training function (e.g., `jax_train_mnist`), any needed arguments, and settings like how many nodes to use.
