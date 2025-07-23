@@ -76,16 +76,20 @@ The Python SDK with JAXRuntime may look as follows:
 ```python
 from kubeflow.trainer import TrainerClient, CustomTrainer
 
+# Add logic using JAX methods
 def jax_train_mnist(args):
-    # TODO: Add training logic using JAX
-    pass
+    raise NotImplementedError
 
 # Select the JAX runtime
 client = TrainerClient()
 jax_runtime = next(r for r in client.list_runtimes() if r.name == "jax-distributed")
+
+# Custom parameters passed as arguments
 args = {
- "lr": "0.03"
+ "parameter_1": "20"
+ "parameter_2": "MSE"
 }
+
 # Launch training job
 job_id = client.train(
     trainer=CustomTrainer(func=jax_train_mnist, func_args=args, num_nodes=3),
