@@ -86,8 +86,8 @@ jax_runtime = next(r for r in client.list_runtimes() if r.name == "jax-distribut
 
 # Custom parameters passed as arguments
 args = {
- "parameter_1": "20"
- "parameter_2": "MSE"
+ "epoch": "20"
+ "loss": "MSE"
 }
 
 # Launch training job
