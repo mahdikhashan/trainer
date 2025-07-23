@@ -15,6 +15,7 @@
     - [Communication Backend](#communication-backend)
         - [OpenMPI](#openmpi)
         - [Gloo](#gloo)
+        - [NCCL](#nccl)
 - [Test Plan](#test-plan)
     - [End-to-End (E2E) Tests](#end-to-end-e2e-tests)
     - [Working Examples](#working-examples)
@@ -23,7 +24,8 @@
 
 ## Summary
 
-This document outlines a proposal to support the JAX Runtime in Kubeflow Trainer V2. Built upon the Kubernetes JobSet API, the JAX Runtime enables training and fine-tuning workloads using the JAX framework on Kubernetes. Instead of relying on framework-specific CRDs, Trainer V2 introduces a unified abstraction through TrainingRuntime and TrainJob. The JAX Runtime implements this abstraction to serve as a reusable blueprint for model training tasks, including large language models (LLMs). Thanks to Kubeflow Trainer Pipeline Framework, we can seamlessly integrate the JAX runtime into Kubeflow Trainer V2 as a runtime plugin.
+This document outlines a proposal to support the JAX Runtime in Kubeflow Trainer V2. Built upon the Kubernetes JobSet API, the JAX Runtime enables training and fine-tuning workloads using the JAX framework on Kubernetes. Instead of relying on framework-specific CRDs, Trainer V2 introduces a unified abstraction through TrainingRuntime and TrainJob. The JAX Runtime implements this abstraction to serve as a reusable blueprint for model training tasks, including large language models (LLMs). With the Kubeflow Trainer Pipeline Framework, we can easily integrate the JAX runtime into Kubeflow Trainer V2 as a runtime plugin.
+
 
 ## Motivation
 
@@ -173,6 +175,7 @@ The number of **JAX hosts** is configured using the `numNodes` field in the **ML
 **Pros:**
 
 * Compatible with existing MPI runtime in Kubeflow Trainer v2, making deployment easier.
+* Leverage `mpi4jax` for HPC application
 
 **Cons:**
 
@@ -257,6 +260,7 @@ spec:
 **Pros:**
 
 * Lightweight and simple to use.
+* Compatible with the Trainer v1
 
 **Cons:**
 
@@ -273,10 +277,10 @@ metadata:
 spec:
   mlPolicy:
     numNodes: 4
+    jax:
+      backend: gloo
   template:
     spec:
-      successPolicy:
-        operator: All
       replicatedJobs:
         - name: process
           template:
@@ -293,6 +297,62 @@ spec:
                         - -c
                         - |
                           echo "JAX Distributed Runtime"
+                          echo "--------------------------------------"
+                          set -e
+                          python --version
+                          pip list | grep jax
+```
+
+#### NCCL
+
+**Pros**
+* Minimal setup; JAX/XLA usually auto-configures it.
+* Optimized GPU collectives (all-reduce, etc.) that leverage NVLink/PCIe topology.
+* Can use GPUDirect (incl. RDMA) for fast inter-node transfers when fabric supports it.
+
+**Cons**
+* Performance drops on CPU-only or host-staged gradients; MPI often faster there.
+* High latency for many small messages; can trail tuned OpenMPI runs (env-dependent, sometimes 10–20× in CPU-centric tests).
+* Debug tooling limited; transport or fabric misconfig can silently degrade throughput.
+
+
+**ClusterTrainingRuntime Design**
+
+```yaml
+apiVersion: trainer.kubeflow.org/v1alpha1
+kind: ClusterTrainingRuntime
+metadata:
+  name: jax-distributed
+spec:
+  mlPolicy:
+    numNodes: 4
+    jax:
+      backend: nccl
+      envs:
+        - name: NCCL_DEBUG
+          value: "WARN"
+        - name: NCCL_IB_DISABLE
+          value: "1"
+        - name: NCCL_SOCKET_IFNAME
+          value: "eth0"
+  template:
+    spec:
+      replicatedJobs:
+        - name: process
+          template:
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: node
+                      image: ghcr.io/kubeflow/trainer/jax-runtime
+                      securityContext:
+                        runAsUser: 1000
+                      command:
+                        - bash
+                        - -c
+                        - |
+                          echo "JAX Distributed Runtime with NCCL"
                           echo "--------------------------------------"
                           set -e
                           python --version
