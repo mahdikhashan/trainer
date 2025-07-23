@@ -29,19 +29,21 @@ This document outlines a proposal to support the JAX Runtime in Kubeflow Trainer
 
 ## Motivation
 
-JAX is a powerful ML framework created by Google. It is widely used in the machine learning research and ranks as the third most widely used deep learning frameworks. JAX is not only a deep learning framework but suggests its potential in differential programming, large-scale physics simulations and many more.
+JAX is a high-performance numerical computing framework created by Google. It is widely used in the machine learning research and ranks as the third most widely used deep learning frameworks. JAX also suggests its potential in differential programming, large-scale physics simulations and many more.
 
 These usecases added on top of the new Runtime API for distributed training or calculation of objectives enables new users on top of Kubeflow Trainer, like distributed simulation or training of LLM prototypes developed with JAX, like vast models from Google DeepMind.
 
-In general the motivation is to enable users to use Single-Program Multi-Data (SPMD) pattern with JAX Framework.
+In general the motivation is to enable users to use Single-Program Multi-Data (SPMD) pattern with JAX Framework, however there are other reasons like ensure backward compatibility with Trainer V1, which previously included JAX support, allowing existing users to transition smoothly while taking advantage of the enhanced Runtime API.
 
-With this design, Platform Admins can define standardized training runtimes, while AI Practitioners can easily customize them, through a simple SDK interface, without needing to understand Kubernetes internals.
+Finally with this design, Platform Admins can define standardized training runtimes, while AI Practitioners can easily customize them, through a simple SDK interface, without needing to understand Kubernetes internals.
 
 **Benefits**
 
 1. Leverage JAX for differential programming and large-scale simulations
 2. Enable distributed training or objective computation using the new Runtime API
 3. Support prototyping and training of large JAX-based LLMs within Kubeflow Trainer
+
+---
 
 ### Goals
 
