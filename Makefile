@@ -18,10 +18,10 @@ TRAINER_CHART_DIR := $(PROJECT_DIR)/charts/kubeflow-trainer
 LOCALBIN ?= $(PROJECT_DIR)/bin
 
 # Tool versions
-K8S_VERSION ?= 1.32.0
+K8S_VERSION ?= 1.34.0
 GINKGO_VERSION ?= $(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
-ENVTEST_VERSION ?= release-0.20
-CONTROLLER_GEN_VERSION ?= v0.17.2
+ENVTEST_VERSION ?= release-0.22
+CONTROLLER_GEN_VERSION ?= v0.18.0
 KIND_VERSION ?= $(shell go list -m -f '{{.Version}}' sigs.k8s.io/kind)
 HELM_VERSION ?= v3.15.3
 HELM_UNITTEST_VERSION ?= 0.5.1
@@ -152,11 +152,11 @@ endif
 # Instructions to run tests.
 .PHONY: test
 test: ## Run Go unit test.
-	go test $(shell go list ./... | grep -v '/test/' | grep -v '/cmd/' | grep -v '/hack/' | grep -v '/pkg/apis' | grep -v '/pkg/client') -coverprofile cover.out
+	go test $(shell go list ./... | grep -Ev '/(test|cmd|hack|pkg/apis|pkg/client|pkg/util/testing)') -coverprofile cover.out
 
 .PHONY: test-integration
 test-integration: ginkgo envtest jobset-operator-crd scheduler-plugins-crd ## Run Go integration test.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(K8S_VERSION) -p path)" $(GINKGO) -v ./test/integration/... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(K8S_VERSION) -p path)" $(GINKGO) -v ./test/integration/...
 
 .PHONY: test-python
 test-python: ## Run Python unit test.
