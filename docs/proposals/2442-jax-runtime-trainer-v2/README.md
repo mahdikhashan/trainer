@@ -58,6 +58,7 @@ Finally with this design, Platform Admins can define standardized training runti
 
 - No TPU testing, tests will use CPU
 - No GPU testing, tests will use CPU
+- No Support for `mpi` backend
 
 ## Proposal
 
