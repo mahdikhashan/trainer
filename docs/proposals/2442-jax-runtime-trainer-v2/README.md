@@ -118,7 +118,7 @@ This section explains the architecture and flow of executing a distributed JAX t
 | **Actor / Component**   | **Action**                                | **Details**                                                                                                                     |
 | ----------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Platform Admin          | Prepares the Cluster Training Runtime | Defines container image, entrypoint, framework (e.g., JAX), and resource needs. Setup reusable for training jobs.               |
-| System                  | Retrieves the Training Runtime Spec   | Fetched automatically when a user requests a training job to determine execution details.                                       |
+| Trainer Controller Manager                  | Retrieves the Training Runtime Spec   | Fetched automatically when a user requests a training job to determine execution details.                                       |
 | AI Practitioner         | Creates the Training Job              | Uses Kubeflow Python SDK or `kubectl`. Provides training function (e.g., `jax_train_mnist`), arguments, and node configuration. |
 | Runtime | Creates and Submits a JobSet          | Training job spec is translated into a JobSet (group of coordinated jobs).                                                      |
 | JobSet Controller | Launches Distributed Jobs             | JobSet spawns multiple Kubernetes Jobs, each pod runs a JAX training process instance.                                          |
