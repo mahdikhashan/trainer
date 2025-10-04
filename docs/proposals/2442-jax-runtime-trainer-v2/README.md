@@ -132,7 +132,7 @@ The number of **JAX hosts** is configured using the `numNodes` field in the **ML
 
 #### JAXMLPolicySource
 
-`JAXMLPolicySource` configures JAX distributed initialization, backend, devices, and precision.
+`JAXMLPolicySource` indicates that the JAX plugin should be activated. The extension framework will set the appropriate values for JAX distributed environment, backend, devices, and precision.
 
 ```golang
 type MLPolicySource struct {
