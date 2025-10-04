@@ -72,7 +72,7 @@ The Python SDK with JAXRuntime may look as follows:
 from kubeflow.trainer import TrainerClient, CustomTrainer
 
 # Add logic using JAX methods
-def jax_train_mnist(args):
+def jax_train_mnist(epoch = 10, loss: str = None):
     raise NotImplementedError
 
 # Select the JAX runtime
