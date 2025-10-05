@@ -51,8 +51,8 @@ Finally with this design, Platform Admins can define standardized training runti
 
 ### Non-Goals
 
-- No TPU testing, tests will use CPU
-- No GPU testing, tests will use CPU
+- Set up test in TPU cluster
+- Add advanced JAX APIs
 
 ## Proposal
 
