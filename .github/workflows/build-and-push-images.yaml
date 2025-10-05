@@ -43,7 +43,7 @@ jobs:
             platforms: linux/amd64,linux/arm64
           - component-name: jax-runtime
             dockerfile: cmd/runtimes/jax/Dockerfile
-            platforms: linux/amd64,linux/arm64
+            platforms: linux/arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
